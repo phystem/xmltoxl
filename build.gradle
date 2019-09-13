@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-mainClassName = 'xml2csv.X2CConverter'
+mainClassName = 'xml2xl.X2XConverter'
 
 group 'com.phystem'
 version '1.0-SNAPSHOT'

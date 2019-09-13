@@ -1,4 +1,4 @@
-package xml2csv;
+package xml2xl;
 
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
@@ -20,7 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public class X2CConverter {
+public class X2XConverter {
 
 
     List<HashMap<String, String>> values = new ArrayList<>();
@@ -153,12 +153,12 @@ public class X2CConverter {
                     files.add(args[i]);
                 }
             }
-            new X2CConverter().convert(files, excelFileName);
+            new X2XConverter().convert(files, excelFileName);
         } else {
             System.out.println("Usage --");
-            System.out.println("java -jar xml2csv-1.0-SNAPSHOT.jar OutputExcelFileName input1.xml");
-            System.out.println("java -jar xml2csv-1.0-SNAPSHOT.jar OutputExcelFileName input1.xml input2.xml");
-            System.out.println("java -jar xml2csv-1.0-SNAPSHOT.jar OutputExcelFileName inputXmlFolderLocation");
+            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar OutputExcelFileName input1.xml");
+            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar OutputExcelFileName input1.xml input2.xml");
+            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar OutputExcelFileName inputXmlFolderLocation");
         }
     }
 

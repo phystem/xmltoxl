@@ -1,11 +1,11 @@
-package xml2csv;
+package xml2xl;
 
 import javax.swing.*;
 
 public class MainUI extends JFrame {
 
     public MainUI() {
-        setTitle("XML2CSV");
+        setTitle("XML2XL");
         initComponents();
     }
 
