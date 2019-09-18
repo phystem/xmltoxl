@@ -2,11 +2,13 @@ package xml2xl;
 
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
+import net.sf.practicalxml.DomUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import java.io.File;
@@ -30,34 +32,36 @@ public class X2XConverter {
     HashSet<String> columnNames = new LinkedHashSet<>();
 
     private void writeToExcel(String outputFile) {
-        File excelFile = new File(outputFile + ".xlsx");
-        System.out.println("Storing in Excel File - " + excelFile.getAbsolutePath());
-        try {
-            Workbook workbook;
-            if (excelFile.exists())
-                workbook = new XSSFWorkbook(new FileInputStream(excelFile));
-            else
-                workbook = new XSSFWorkbook();
-            int sheetSize = workbook.getNumberOfSheets();
-            Sheet sheet = workbook.createSheet("Sheet" + sheetSize);
-            Row headerRow = sheet.createRow(0);
-            columnNames.forEach(columnName -> {
-                headerRow.createCell(headerRow.getPhysicalNumberOfCells()).setCellValue(columnName);
-            });
-            values.forEach(excelValue -> {
-                Row dataRow = sheet.createRow(sheet.getPhysicalNumberOfRows());
+        if (!values.isEmpty()) {
+            File excelFile = new File(outputFile + ".xlsx");
+            System.out.println("Storing in Excel File - " + excelFile.getAbsolutePath());
+            try {
+                Workbook workbook;
+                if (excelFile.exists())
+                    workbook = new XSSFWorkbook(new FileInputStream(excelFile));
+                else
+                    workbook = new XSSFWorkbook();
+                int sheetSize = workbook.getNumberOfSheets();
+                Sheet sheet = workbook.createSheet("Sheet" + sheetSize);
+                Row headerRow = sheet.createRow(0);
                 columnNames.forEach(columnName -> {
-                    Cell dataCell = dataRow.createCell(dataRow.getPhysicalNumberOfCells());
-                    if (excelValue.containsKey(columnName)) {
-                        dataCell.setCellValue(excelValue.get(columnName));
-                    } else {
-                        dataCell.setBlank();
-                    }
+                    headerRow.createCell(headerRow.getPhysicalNumberOfCells()).setCellValue(columnName);
                 });
-            });
-            workbook.write(new FileOutputStream(excelFile));
-        } catch (IOException e) {
-            e.printStackTrace();
+                values.forEach(excelValue -> {
+                    Row dataRow = sheet.createRow(sheet.getPhysicalNumberOfRows());
+                    columnNames.forEach(columnName -> {
+                        Cell dataCell = dataRow.createCell(dataRow.getPhysicalNumberOfCells());
+                        if (excelValue.containsKey(columnName)) {
+                            dataCell.setCellValue(excelValue.get(columnName));
+                        } else {
+                            dataCell.setBlank();
+                        }
+                    });
+                });
+                workbook.write(new FileOutputStream(excelFile));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -71,7 +75,7 @@ public class X2XConverter {
                 values.add(currentXmlMap);
                 XML xml = new XMLDocument(xmlText).registerNs("ebm", getNameSpace(xmlText));
                 Node itemNode = xml.nodes("//ebm:item").get(0).node();
-                processNode(itemNode, getSimpleNodeName(itemNode));
+                processNode(itemNode);
             });
         });
         writeToExcel(outputFile);
@@ -110,35 +114,27 @@ public class X2XConverter {
         return xmls;
     }
 
-    private void storeDetails(Node childNode, String parentName) {
-        String columnName = parentName + "_" + getSimpleNodeName(childNode);
-        columnName = columnName.startsWith("_") ? columnName.substring(1) : columnName;
-        String uniqColName = columnName;
-        int counter = 1;
-        while (currentXmlMap.containsKey(uniqColName)) {
-            uniqColName = columnName + counter++;
-        }
+    private void storeDetails(Node childNode) {
+        String columnName = DomUtil.getAbsolutePath((Element) childNode);
+        columnName = columnName
+                .replace("/", "_")
+                .replace("[", "")
+                .replace("]", "")
+                .substring(6);
         String columnValue = childNode.getTextContent();
-        columnNames.add(uniqColName);
-        currentXmlMap.put(uniqColName, columnValue);
+        columnNames.add(columnName);
+        currentXmlMap.put(columnName, columnValue);
     }
 
-    private String getSimpleNodeName(Node node) {
-        return node.getNodeName().replace(node.getPrefix(), "").replace(":", "");
-    }
 
-    private void processNode(Node nodeToProcess, String parentName) {
-        if (nodeToProcess.getNodeType() == 3) {
-            return;
-        }
-        if (nodeToProcess.getChildNodes().getLength() > 1) {
-            for (int i = 0; i < nodeToProcess.getChildNodes().getLength(); i++) {
-                String processNodeName = getSimpleNodeName(nodeToProcess);
-                processNode(nodeToProcess.getChildNodes().item(i), parentName.equals(processNodeName) ? "" : parentName + "_" + processNodeName);
+    private void processNode(Node nodeToProcess) {
+        DomUtil.getChildren(nodeToProcess).forEach(element -> {
+            if (DomUtil.hasElementChildren(element)) {
+                processNode(element);
+            } else {
+                storeDetails(element);
             }
-        } else {
-            storeDetails(nodeToProcess, parentName);
-        }
+        });
     }
 
     public static void main(String[] args) {

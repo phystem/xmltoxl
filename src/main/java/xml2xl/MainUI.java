@@ -5,7 +5,7 @@ import javax.swing.*;
 public class MainUI extends JFrame {
 
     public MainUI() {
-        setTitle("XML2XL");
+        setTitle("XML2XL - InProgress");
         initComponents();
     }
 
