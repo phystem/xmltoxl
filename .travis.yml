@@ -1,0 +1,29 @@
+language: java
+jdk:
+  - oraclejdk8
+
+sudo: false
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+
+cache:
+  directories:
+  - $HOME/.m2
+  
+install: true
+
+script: "./gradlew clean fatJar"
+
+before_deploy:
+  - export RELEASE_FILE=$(ls build/libs/xml2xl*.jar)
+  
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  file:  $RELEASE_FILE
+  skip_cleanup: true
+  overwrite: true
+  on:
+    tags: true
