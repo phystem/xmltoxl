@@ -24,12 +24,17 @@ import java.util.stream.Stream;
 
 public class X2XConverter {
 
+    private String parentNodeName;
 
     List<HashMap<String, String>> values = new ArrayList<>();
 
     HashMap<String, String> currentXmlMap;
 
     HashSet<String> columnNames = new LinkedHashSet<>();
+
+    public X2XConverter(String parentNodeName) {
+        this.parentNodeName = parentNodeName;
+    }
 
     private void writeToExcel(String outputFile) {
         if (!values.isEmpty()) {
@@ -65,7 +70,6 @@ public class X2XConverter {
         }
     }
 
-
     private void convert(List<String> files, String outputFile) {
         System.out.println("Processing Files");
         files.forEach(file -> {
@@ -74,8 +78,12 @@ public class X2XConverter {
                 currentXmlMap = new LinkedHashMap<>();
                 values.add(currentXmlMap);
                 XML xml = new XMLDocument(xmlText).registerNs("ebm", getNameSpace(xmlText));
-                Node itemNode = xml.nodes("//ebm:item").get(0).node();
-                processNode(itemNode);
+                List<XML> nodes = xml.nodes("//" + parentNodeName);
+                if (!nodes.isEmpty()) {
+                    processNode(nodes.get(0).node());
+                } else {
+                    System.err.println("Couldn't found nodes matching //" + parentNodeName);
+                }
             });
         });
         writeToExcel(outputFile);
@@ -126,7 +134,6 @@ public class X2XConverter {
         currentXmlMap.put(columnName, columnValue);
     }
 
-
     private void processNode(Node nodeToProcess) {
         DomUtil.getChildren(nodeToProcess).forEach(element -> {
             if (DomUtil.hasElementChildren(element)) {
@@ -138,23 +145,25 @@ public class X2XConverter {
     }
 
     public static void main(String[] args) {
-        if (args != null && args.length >= 2) {
-            String excelFileName = args[0];
+        if (args != null && args.length >= 3) {
+            String xmlNodeName = args[0];
+            String excelFileName = args[1];
             List<String> files = new ArrayList<>();
-            if (!args[1].endsWith(".xml")) {
-                File folder = new File(args[1]);
+            if (!args[2].endsWith(".xml")) {
+                File folder = new File(args[2]);
                 Stream.of(folder.listFiles((dir, name) -> name.endsWith(".xml"))).map(File::getAbsolutePath).forEach(files::add);
             } else {
-                for (int i = 1; i < args.length; i++) {
+                for (int i = 2; i < args.length; i++) {
                     files.add(args[i]);
                 }
             }
-            new X2XConverter().convert(files, excelFileName);
+            new X2XConverter(xmlNodeName).convert(files, excelFileName);
         } else {
             System.out.println("Usage --");
-            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar OutputExcelFileName input1.xml");
-            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar OutputExcelFileName input1.xml input2.xml");
-            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar OutputExcelFileName inputXmlFolderLocation");
+            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar xmlNodeName OutputExcelFileName input1.xml");
+            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar xmlNodeName OutputExcelFileName input1.xml input2.xml");
+            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar xmlNodeName OutputExcelFileName inputXmlFolderLocation");
+            System.out.println("java -jar xml2xl-1.0-SNAPSHOT.jar ebm:item OutputExcelFileName input1.xml");
         }
     }
 

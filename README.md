@@ -15,19 +15,19 @@ A jar file (xml2xl-1.0-SNAPSHOT.jar) will be created in build/libs directory
 
 To run use
 
-java -jar xml2xl-1.0-SNAPSHOT.jar arg1 arg2 ...
+java -jar xml2xl-1.0-SNAPSHOT.jar arg1 arg2 arg3...
 
 It accepts two or more arguments. The first argument is excel file name (without extension). The second argument can either be xml filename or xml folder location
 
-`java -jar xml2xl-1.0-SNAPSHOT.jar NewExcel sample.xml` - Will convert sample xml and create rows in NewExcel.xlsx
+`java -jar xml2xl-1.0-SNAPSHOT.jar xmlNodeName NewExcel sample.xml` - Will convert sample xml and create rows in NewExcel.xlsx
 
-`java -jar xml2xl-1.0-SNAPSHOT.jar NewExcel sample.xml sample2.xml` - Will convert sample and sample2 xmls and create rows in NewExcel.xlsx
+`java -jar xml2xl-1.0-SNAPSHOT.jar xmlNodeName NewExcel sample.xml sample2.xml` - Will convert sample and sample2 xmls and create rows in NewExcel.xlsx
 
-`java -jar xml2xl-1.0-SNAPSHOT.jar NewExcel sample.xml sample2.xml sample3.xml` - Will convert sample,sample2 and sample3 xmls and create rows in NewExcel.xlsx
+`java -jar xml2xl-1.0-SNAPSHOT.jar xmlNodeName NewExcel sample.xml sample2.xml sample3.xml` - Will convert sample,sample2 and sample3 xmls and create rows in NewExcel.xlsx
 
 If you have more xmls, there is option to specify directory as well
 
-`java -jar xml2xl-1.0-SNAPSHOT.jar NewExcel xmlFolderLocation` - Will convert all the xmls inside xmlFolderLocation and create rows in NewExcel.xlsx
+`java -jar xml2xl-1.0-SNAPSHOT.jar xmlNodeName NewExcel xmlFolderLocation` - Will convert all the xmls inside xmlFolderLocation and create rows in NewExcel.xlsx
 
 
  
