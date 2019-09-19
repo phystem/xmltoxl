@@ -38,6 +38,8 @@ public class X2XConverter {
 
     private void writeToExcel(String outputFile) {
         if (!values.isEmpty()) {
+
+            System.out.println("No of columns - " + columnNames.size());
             File excelFile = new File(outputFile + ".xlsx");
             System.out.println("Storing in Excel File - " + excelFile.getAbsolutePath());
             try {
@@ -90,7 +92,7 @@ public class X2XConverter {
     }
 
     private String getNameSpace(String xmlContent) {
-        Pattern pattern = Pattern.compile("<ebm:PublishItem xmlns:ebm=\"(.*)\">");
+        Pattern pattern = Pattern.compile("<ebm:.* xmlns:ebm=\"(.*)\">");
         Matcher matcher = pattern.matcher(xmlContent);
         if (matcher.find()) {
             return matcher.group(1);
@@ -106,6 +108,9 @@ public class X2XConverter {
             Stream.of(fileContent.split("\n"))
                     .forEach(line -> {
                         if (line.contains("<?xml version")) {
+                            if (line.startsWith("</")) {
+                                xmlString.append(line.substring(0, line.indexOf(">") + 1));
+                            }
                             if (!xmlString.toString().isEmpty()) {
                                 xmls.add(xmlString.toString());
                                 xmlString.setLength(0);
@@ -125,10 +130,10 @@ public class X2XConverter {
     private void storeDetails(Node childNode) {
         String columnName = DomUtil.getAbsolutePath((Element) childNode);
         columnName = columnName
+                .substring(columnName.indexOf("/", 1) + 1)
                 .replace("/", "_")
                 .replace("[", "")
-                .replace("]", "")
-                .substring(6);
+                .replace("]", "");
         String columnValue = childNode.getTextContent();
         columnNames.add(columnName);
         currentXmlMap.put(columnName, columnValue);
