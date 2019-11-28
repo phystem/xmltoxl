@@ -6,13 +6,11 @@ import net.sf.practicalxml.DomUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,6 +30,8 @@ public class X2XConverter {
 
     HashSet<String> columnNames = new LinkedHashSet<>();
 
+    int invalidXmls = 0;
+
     public X2XConverter(String parentNodeName) {
         this.parentNodeName = parentNodeName;
     }
@@ -40,14 +40,16 @@ public class X2XConverter {
         if (!values.isEmpty()) {
 
             System.out.println("No of columns - " + columnNames.size());
+            System.out.println("No of Rows - " + values.size());
+            if (invalidXmls > 0)
+                System.out.println("Couldn't Process xmls - " + invalidXmls);
+
             File excelFile = new File(outputFile + ".xlsx");
             System.out.println("Storing in Excel File - " + excelFile.getAbsolutePath());
             try {
-                Workbook workbook;
-                if (excelFile.exists())
-                    workbook = new XSSFWorkbook(new FileInputStream(excelFile));
-                else
-                    workbook = new XSSFWorkbook();
+                SXSSFWorkbook workbook = new SXSSFWorkbook();
+                workbook.setCompressTempFiles(true);
+
                 int sheetSize = workbook.getNumberOfSheets();
                 Sheet sheet = workbook.createSheet("Sheet" + sheetSize);
                 Row headerRow = sheet.createRow(0);
@@ -66,6 +68,7 @@ public class X2XConverter {
                     });
                 });
                 workbook.write(new FileOutputStream(excelFile));
+                workbook.dispose();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -76,20 +79,29 @@ public class X2XConverter {
         System.out.println("Processing Files");
         files.forEach(file -> {
             System.out.println("Processing File - " + file);
-            parseXmlsFromFile(file).forEach(xmlText -> {
-                currentXmlMap = new LinkedHashMap<>();
-                values.add(currentXmlMap);
-                XML xml = new XMLDocument(xmlText).registerNs("ebm", getNameSpace(xmlText));
-                List<XML> nodes = xml.nodes("//" + parentNodeName);
-                if (!nodes.isEmpty()) {
-                    processNode(nodes.get(0).node());
-                } else {
-                    System.err.println("Couldn't found nodes matching //" + parentNodeName);
-                }
-            });
+            parseAndProcessXml(file);
         });
         writeToExcel(outputFile);
     }
+
+    private void writeXmlToXl(String xmlText) {
+        xmlText = xmlText.replaceAll("\\P{Print}", "");
+        xmlText = xmlText.substring(0, xmlText.lastIndexOf(">") + 1);
+        currentXmlMap = new LinkedHashMap<>();
+        values.add(currentXmlMap);
+        try {
+            XML xml = new XMLDocument(xmlText).registerNs("ebm", getNameSpace(xmlText));
+            List<XML> nodes = xml.nodes("//" + parentNodeName);
+            if (!nodes.isEmpty()) {
+                processNode(nodes.get(0).node());
+            } else {
+                System.err.println("Couldn't found nodes matching //" + parentNodeName);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
 
     private String getNameSpace(String xmlContent) {
         Pattern pattern = Pattern.compile("<ebm:.* xmlns:ebm=\"(.*)\">");
@@ -100,8 +112,7 @@ public class X2XConverter {
         return "";
     }
 
-    private List<String> parseXmlsFromFile(String file) {
-        List<String> xmls = new ArrayList<>();
+    private void parseAndProcessXml(String file) {
         StringBuilder xmlString = new StringBuilder();
         try {
             String fileContent = new String(Files.readAllBytes(Paths.get(file)));
@@ -112,19 +123,17 @@ public class X2XConverter {
                                 xmlString.append(line.substring(0, line.indexOf(">") + 1));
                             }
                             if (!xmlString.toString().isEmpty()) {
-                                xmls.add(xmlString.toString());
+                                writeXmlToXl(xmlString.toString());
                                 xmlString.setLength(0);
                             }
                         } else {
                             xmlString.append(line);
                         }
                     });
-            xmls.add(xmlString.toString());
+            writeXmlToXl(xmlString.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Found " + xmls.size() + " xmls in file");
-        return xmls;
     }
 
     private void storeDetails(Node childNode) {
